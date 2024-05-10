@@ -1,5 +1,6 @@
-use std::{fs::File, io::{Write, Read}, collections::HashMap, thread, time::Duration};
+use std::{fs::{File, self}, io::{Write, Read}, collections::HashMap, thread, time::Duration};
 
+use chrono::{Local, DateTime};
 use winapi;
 use sysinfo::{System,Pid};
 
@@ -41,7 +42,7 @@ fn get_process_name(current_pid: u32) -> String{
 
 fn update_time(app_name : String) {
     let time_stamp = 3;
-    let file_path = "app.log";
+    let file_path = get_filepath();
     
     let mut app_map = read_file();
     
@@ -64,9 +65,9 @@ fn update_time(app_name : String) {
 }
 
 fn read_file() -> HashMap<String,i32> {
-    let file_path = "app.log";
+    let file_path = get_filepath();
     
-    let file = File::open(file_path);
+    let file = File::open(&file_path);
     let mut map: HashMap<String, i32> = HashMap::new();
 
     match file {
@@ -84,9 +85,18 @@ fn read_file() -> HashMap<String,i32> {
             }
         }
         Err(_) => {
-            let
-            f = File::create(file_path).unwrap();
+            let f = File::create(file_path).unwrap();
         }
     }
     return map;
+}
+
+fn get_filepath() -> String {
+    let path = std::env::var("APPDATA").map( |path| path.to_string()).unwrap();
+
+    let date: DateTime<Local> = Local::now();
+    fs::create_dir_all(String::from(&path) + "\\digital-wellbeing\\Data").unwrap();
+    let file_path = path + "\\digital-wellbeing\\Data\\" + date.date_naive().to_string().as_str() + ".log";
+
+    return file_path;
 }
