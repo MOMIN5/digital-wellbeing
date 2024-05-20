@@ -1,3 +1,5 @@
+mod gui;
+
 use std::{fs::{File, self}, io::{Write, Read}, collections::HashMap, thread, time::Duration};
 
 use chrono::{Local, DateTime};
@@ -5,13 +7,15 @@ use winapi;
 use sysinfo::{System,Pid};
 
 fn main() {
-    loop{
+    gui::gui().unwrap();
+    /*loop{
         let pid = get_foreground_process();
         let name = get_process_name(pid);
 
         update_time(name);
         thread::sleep(Duration::from_secs(3));
-    }
+    }*/
+
 }
 
 fn get_foreground_process() -> u32 {
@@ -85,7 +89,7 @@ fn read_file() -> HashMap<String,i32> {
             }
         }
         Err(_) => {
-            let f = File::create(file_path).unwrap();
+            File::create(file_path).unwrap();
         }
     }
     return map;
