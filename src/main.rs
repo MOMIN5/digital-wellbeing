@@ -1,21 +1,26 @@
+#![windows_subsystem = "windows"]
 mod gui;
 
-use std::{fs::{File, self}, io::{Write, Read}, collections::HashMap, thread, time::Duration};
+use std::{fs::{File, self}, io::{Write, Read}, collections::HashMap, thread, time::Duration, env};
 
 use chrono::{Local, DateTime};
 use winapi;
 use sysinfo::{System,Pid};
 
 fn main() {
-    gui::gui().unwrap();
-    /*loop{
-        let pid = get_foreground_process();
-        let name = get_process_name(pid);
 
-        update_time(name);
-        thread::sleep(Duration::from_secs(3));
-    }*/
+    let arg: Vec<String> = env::args().collect();
+    if arg.len() > 1 && arg[1] == "nogui" {
+        loop{
+            let pid = get_foreground_process();
+            let name = get_process_name(pid);
 
+            update_time(name);
+            thread::sleep(Duration::from_secs(3));
+        }
+    }else {
+        gui::gui().unwrap();
+    }
 }
 
 fn get_foreground_process() -> u32 {
@@ -36,8 +41,17 @@ fn get_process_name(current_pid: u32) -> String{
     
     if let Some(process) = process {
         let proc_name = process.name();
+        let mut upp_str = String::new();
         
-        let non_exe_name: String = proc_name.chars().rev().skip(4).collect();
+        let mut chars = proc_name.chars();
+        match chars.next() {
+            None => (),
+            Some(f) => {
+                upp_str = f.to_uppercase().collect::<String>() + chars.as_str()
+            }
+        }
+
+        let non_exe_name: String = upp_str.chars().rev().skip(4).collect();
         let sanitized_name = non_exe_name.chars().rev().collect();
         return sanitized_name;
     }

@@ -1,6 +1,6 @@
 use eframe::egui;
 use eframe::egui::{Color32, Pos2, Shape, Stroke, Vec2};
-use egui::{Rounding, Label};
+use egui::{Rounding, RichText, FontId, Label};
 use egui::epaint::RectShape;
 use rand::Rng;
 
@@ -9,7 +9,7 @@ use crate::read_file;
 pub fn gui() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions::default();
     eframe::run_native(
-        "Digital Wellbeing Chart",
+        "Digital Wellbeing Monitor",
         options,
         Box::new(|_cc| Box::new(WellbeingChart::default())),
     )
@@ -23,13 +23,14 @@ impl Default for WellbeingChart {
     fn default() -> Self {
         let mut data_vec: Vec<(String,f32,Color32)> = vec![];
         let hashmap_data = read_file();
-        println!("{:?}",hashmap_data);
+        //println!("{:?}",hashmap_data);
         for (name, time) in hashmap_data {
             let r = rand::thread_rng().gen_range(0..255);
             let g = rand::thread_rng().gen_range(0..255);
             let b = rand::thread_rng().gen_range(0..255);
-            data_vec.push((name,time as f32,Color32::from_rgb(r, g, b)));
-            //println!("data")
+            if time > 0{
+                data_vec.push((name,time as f32,Color32::from_rgb(r, g, b)));
+            }
         }
         Self {
             data: data_vec,
@@ -42,10 +43,9 @@ impl eframe::App for WellbeingChart {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| {
-                ui.label("Digital Wellbeing Chart");
+                ui.label(RichText::new("Digital Wellbeing Monitor").font(FontId::monospace(20.0)).color(Color32::WHITE));
 
-                let (response, painter) =
-                    ui.allocate_painter(Vec2::new(300.0,300.0), egui::Sense::hover());
+                let (response, painter) = ui.allocate_painter(Vec2::new(300.0,300.0), egui::Sense::hover());
 
                 let rect = response.rect;
                 let center = rect.center();
@@ -67,20 +67,43 @@ impl eframe::App for WellbeingChart {
                     let path = Shape::convex_polygon(
                         std::iter::once(center).chain(points.iter().cloned()).collect(),
                         *color,
-                        Stroke::new(5.0, Color32::BLACK),
+                        Stroke::new(2.0, Color32::WHITE),
                     );
 
                     painter.add(path.clone());
 
                     start_angle = end_angle;
-                    ui.label(format!("{}: {}\t",label,color.to_hex()));
-                    
-                    let (mut resp, pain) = ui.allocate_painter(Vec2::new(10.0, 10.0), egui::Sense::hover());
-                    resp.rect.set_width(10.0);
-                    let path2 = Shape::Rect(RectShape::new(resp.rect, Rounding::from(10.0), *color, Stroke::NONE));
-                   // println!("{}, {}",resp.rect.width(),resp.rect.height());
-                    
+                }
+            });
+            ui.horizontal_wrapped(|ui2| {
+                for (name,time,color) in &self.data {
+
+                    //let av_size = ui2.available_size();
+                    let (mut resp, pain) = ui2.allocate_painter(Vec2::new(20.0, 20.0), egui::Sense::hover());
+                    resp.rect.set_width(20.0);
+                    let path2 = Shape::Rect(RectShape::new(resp.rect, Rounding::from(7.0), *color, Stroke::NONE));
+                    // println!("{}, {}",resp.rect.width(),resp.rect.height());
+
                     pain.add(path2);
+
+                    let seconds = time % 60.0;
+                    let minutes = ((time / 60.0) % 60.0).floor();
+                    let hours = ((time / 60.0) / 60.0).floor();
+
+                    let mut message = String::new();
+
+                    if minutes < 1.0 {
+                        message = format!("{name}: {seconds}sec\t");
+                        //println!("mins")
+                    }else if hours < 1.0 {
+                        message = format!("{name}: {minutes}min {seconds}sec\t");
+                        //println!("hr")
+                    }else{
+                        message = format!("{name}: {hours}hr {minutes}min {seconds}sec\t");
+                        //println!("else")
+                    }
+                    ui2.add_sized(Vec2::new(20.0, 20.0), Label::new(RichText::new(&message).font(FontId::monospace(13.0)).color(Color32::WHITE)));
+
                 }
             });
         });

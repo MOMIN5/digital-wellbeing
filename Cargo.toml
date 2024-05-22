@@ -2,6 +2,7 @@
 name = "proj"
 version = "0.1.0"
 edition = "2021"
+windows_subsystem = "windows"
 
 [dependencies]
 sysinfo = "0.30.12"
