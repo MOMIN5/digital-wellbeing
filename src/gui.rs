@@ -1,7 +1,7 @@
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Datelike};
 use eframe::egui;
 use eframe::egui::{Color32, Pos2, Shape, Stroke, Vec2};
-use egui::{Rounding, RichText, FontId, Label, Window, Button};
+use egui::{Rounding, RichText, FontId, Label, Window};
 use egui::epaint::RectShape;
 use rand::Rng;
 
@@ -37,6 +37,7 @@ struct WellbeingChart {
     data: Vec<(String, f32, Color32)>,
     date: NaiveDate,
     show_error_window: bool,
+    show_future_date_window: bool,
 }
 
 impl Default for WellbeingChart {
@@ -57,6 +58,7 @@ impl Default for WellbeingChart {
             data: data_vec,
             date: curr_date,
             show_error_window: false,
+            show_future_date_window: false,
         }
     }
 }
@@ -119,44 +121,79 @@ impl eframe::App for WellbeingChart {
                 }
             });
             ui.vertical_centered(|ui3|{
-                let tot_time_text = format!("\nTotal Time on {}",&self.date) + get_format_time(&total_time).as_str();
+                let tot_time_text = format!("\nTotal Time on {}/{}/{}",&self.date.day(),&self.date.month(),&self.date.year()) + get_format_time(&total_time).as_str();
                 ui3.label(RichText::new(tot_time_text).font(FontId::monospace(22.5)).color(Color32::LIGHT_GRAY));
             });
-            if ui.button(RichText::new("PREVIOUS DAY").size(15.0)).clicked() {
 
-                let path = std::env::var("APPDATA").map( |path| path.to_string()).unwrap();
-                self.date = self.date.pred_opt().unwrap();
+            ui.horizontal(|ui|{
+                if ui.button(RichText::new("Previous Day").size(20.0)).clicked() {
 
-                let mut file_path = path.to_owned().to_string() + "\\digital-wellbeing\\Data\\" + self.date.to_string().as_str() + ".log";
-                let mut prev_date_vec = vec![];
-                let mut prev_date_data = read_file(&file_path);
+                    let path = std::env::var("APPDATA").map( |path| path.to_string()).unwrap();
+                    self.date = self.date.pred_opt().unwrap();
 
-                if prev_date_data.is_empty() {
-                    self.show_error_window = true;
-                    self.date = self.date.succ_opt().unwrap();
-                    file_path = path + "\\digital-wellbeing\\Data\\" + self.date.to_string().as_str() + ".log";
-                    prev_date_data = read_file(&file_path);
-                    ui.set_enabled(false);
-                }
+                    let mut file_path = path.to_owned().to_string() + "\\digital-wellbeing\\Data\\" + self.date.to_string().as_str() + ".log";
+                    let mut prev_date_vec = vec![];
+                    let mut prev_date_data = read_file(&file_path);
 
-                for (name, time) in prev_date_data {
-                    let r = rand::thread_rng().gen_range(0..255);
-                    let g = rand::thread_rng().gen_range(0..255);
-                    let b = rand::thread_rng().gen_range(0..255);
-                    if time > 0{
-                        prev_date_vec.push((name,time as f32,Color32::from_rgb(r, g, b)));
+                    if prev_date_data.is_empty() {
+                        self.show_error_window = true;
+                        self.date = self.date.succ_opt().unwrap();
+                        file_path = path + "\\digital-wellbeing\\Data\\" + self.date.to_string().as_str() + ".log";
+                        prev_date_data = read_file(&file_path);
+                        ui.set_enabled(false);
+                    }else{
+
+                        for (name, time) in prev_date_data {
+                            let r = rand::thread_rng().gen_range(0..255);
+                            let g = rand::thread_rng().gen_range(0..255);
+                            let b = rand::thread_rng().gen_range(0..255);
+                            if time > 0{
+                                prev_date_vec.push((name,time as f32,Color32::from_rgb(r, g, b)));
+                            }
+                        }
+                        self.data = prev_date_vec;
                     }
                 }
-                self.data = prev_date_vec;
-            }
-            if self.show_error_window == true {
-                Window::new("Error").resizable(false).collapsible(false).movable(true).show(ctx, |box_ui|{
-                    box_ui.label("There is no data available for the previous date");
-                    if box_ui.button("CLOSE").clicked() {
-                        self.show_error_window = false;
-                    }
-                });
-            }
+                if self.show_error_window == true {
+                    Window::new("Error").resizable(false).collapsible(false).movable(false).show(ctx, |box_ui|{
+                        box_ui.label("There is no data available for the previous date");
+                        if box_ui.button("CLOSE").clicked() {
+                            self.show_error_window = false;
+                        }
+                    });
+                }
+
+                if ui.button(RichText::new("Next Day").size(20.0)).clicked() {
+                   if self.date == chrono::Local::now().date_naive() {
+                       self.show_future_date_window = true;
+                   } else {
+                       let path = std::env::var("APPDATA").map( |path| path.to_string()).unwrap();
+                       self.date = self.date.succ_opt().unwrap();
+
+                        let file_path = path.to_owned().to_string() + "\\digital-wellbeing\\Data\\" + self.date.to_string().as_str() + ".log";
+                        let mut prev_date_vec = vec![];
+                        let prev_date_data = read_file(&file_path);
+
+                        for (name, time) in prev_date_data {
+                            let r = rand::thread_rng().gen_range(0..255);
+                            let g = rand::thread_rng().gen_range(0..255);
+                            let b = rand::thread_rng().gen_range(0..255);
+                            if time > 0{
+                                prev_date_vec.push((name,time as f32,Color32::from_rgb(r, g, b)));
+                            }
+                        }
+                        self.data = prev_date_vec;
+                   }
+                }
+                if self.show_future_date_window == true {
+                    Window::new("Error").resizable(false).collapsible(false).movable(false).show(ctx, |box_ui|{
+                        box_ui.label("You are at the latest date!");
+                        if box_ui.button("CLOSE").clicked() {
+                            self.show_future_date_window = false;
+                        }
+                    });
+                }
+            });
         });
     }
 }
