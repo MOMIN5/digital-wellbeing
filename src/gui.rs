@@ -1,10 +1,11 @@
+use chrono::NaiveDate;
 use eframe::egui;
 use eframe::egui::{Color32, Pos2, Shape, Stroke, Vec2};
-use egui::{Rounding, RichText, FontId, Label};
+use egui::{Rounding, RichText, FontId, Label, Window, Button};
 use egui::epaint::RectShape;
 use rand::Rng;
 
-use crate::read_file;
+use crate::{read_file, get_filepath};
 
 pub fn gui() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions::default();
@@ -15,14 +16,34 @@ pub fn gui() -> Result<(), eframe::Error> {
     )
 }
 
+fn get_format_time(time: &f32) -> String {
+    let seconds = time % 60.0;
+    let minutes = ((time / 60.0) % 60.0).floor();
+    let hours = ((time / 60.0) / 60.0).floor();
+
+    let mut message = String::new();
+
+    if minutes < 1.0 {
+        message = format!(": {seconds}sec\t");
+    }else if hours < 1.0 {
+        message = format!(": {minutes}min {seconds}sec\t");
+    }else{
+        message = format!(": {hours}hr {minutes}min {seconds}sec\t");
+    }
+    return message;
+}
+
 struct WellbeingChart {
     data: Vec<(String, f32, Color32)>,
+    date: NaiveDate,
+    show_error_window: bool,
 }
 
 impl Default for WellbeingChart {
     fn default() -> Self {
         let mut data_vec: Vec<(String,f32,Color32)> = vec![];
-        let hashmap_data = read_file();
+        let curr_date = chrono::Local::now().date_naive();
+        let hashmap_data = read_file(&get_filepath());
         //println!("{:?}",hashmap_data);
         for (name, time) in hashmap_data {
             let r = rand::thread_rng().gen_range(0..255);
@@ -34,6 +55,8 @@ impl Default for WellbeingChart {
         }
         Self {
             data: data_vec,
+            date: curr_date,
+            show_error_window: false,
         }
     }
 }
@@ -41,8 +64,12 @@ impl Default for WellbeingChart {
 impl eframe::App for WellbeingChart {
     
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+
+        let mut total_time = 0.0;
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| {
+                //ui.label(current_date);
                 ui.label(RichText::new("Digital Wellbeing Monitor").font(FontId::monospace(20.0)).color(Color32::WHITE));
 
                 let (response, painter) = ui.allocate_painter(Vec2::new(300.0,300.0), egui::Sense::hover());
@@ -82,30 +109,54 @@ impl eframe::App for WellbeingChart {
                     let (mut resp, pain) = ui2.allocate_painter(Vec2::new(20.0, 20.0), egui::Sense::hover());
                     resp.rect.set_width(20.0);
                     let path2 = Shape::Rect(RectShape::new(resp.rect, Rounding::from(7.0), *color, Stroke::NONE));
-                    // println!("{}, {}",resp.rect.width(),resp.rect.height());
 
                     pain.add(path2);
 
-                    let seconds = time % 60.0;
-                    let minutes = ((time / 60.0) % 60.0).floor();
-                    let hours = ((time / 60.0) / 60.0).floor();
+                    total_time += time;
+                    let message = name.to_owned() + get_format_time(time).as_str();
 
-                    let mut message = String::new();
-
-                    if minutes < 1.0 {
-                        message = format!("{name}: {seconds}sec\t");
-                        //println!("mins")
-                    }else if hours < 1.0 {
-                        message = format!("{name}: {minutes}min {seconds}sec\t");
-                        //println!("hr")
-                    }else{
-                        message = format!("{name}: {hours}hr {minutes}min {seconds}sec\t");
-                        //println!("else")
-                    }
-                    ui2.add_sized(Vec2::new(20.0, 20.0), Label::new(RichText::new(&message).font(FontId::monospace(13.0)).color(Color32::WHITE)));
-
+                    ui2.add_sized(Vec2::new(20.0, 20.0), Label::new(RichText::new(message).font(FontId::monospace(13.0)).color(Color32::WHITE)));
                 }
             });
+            ui.vertical_centered(|ui3|{
+                let tot_time_text = format!("\nTotal Time on {}",&self.date) + get_format_time(&total_time).as_str();
+                ui3.label(RichText::new(tot_time_text).font(FontId::monospace(22.5)).color(Color32::LIGHT_GRAY));
+            });
+            if ui.button(RichText::new("PREVIOUS DAY").size(15.0)).clicked() {
+
+                let path = std::env::var("APPDATA").map( |path| path.to_string()).unwrap();
+                self.date = self.date.pred_opt().unwrap();
+
+                let mut file_path = path.to_owned().to_string() + "\\digital-wellbeing\\Data\\" + self.date.to_string().as_str() + ".log";
+                let mut prev_date_vec = vec![];
+                let mut prev_date_data = read_file(&file_path);
+
+                if prev_date_data.is_empty() {
+                    self.show_error_window = true;
+                    self.date = self.date.succ_opt().unwrap();
+                    file_path = path + "\\digital-wellbeing\\Data\\" + self.date.to_string().as_str() + ".log";
+                    prev_date_data = read_file(&file_path);
+                    ui.set_enabled(false);
+                }
+
+                for (name, time) in prev_date_data {
+                    let r = rand::thread_rng().gen_range(0..255);
+                    let g = rand::thread_rng().gen_range(0..255);
+                    let b = rand::thread_rng().gen_range(0..255);
+                    if time > 0{
+                        prev_date_vec.push((name,time as f32,Color32::from_rgb(r, g, b)));
+                    }
+                }
+                self.data = prev_date_vec;
+            }
+            if self.show_error_window == true {
+                Window::new("Error").resizable(false).collapsible(false).movable(true).show(ctx, |box_ui|{
+                    box_ui.label("There is no data available for the previous date");
+                    if box_ui.button("CLOSE").clicked() {
+                        self.show_error_window = false;
+                    }
+                });
+            }
         });
     }
 }

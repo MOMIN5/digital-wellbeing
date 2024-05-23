@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+//#![windows_subsystem = "windows"]
 mod gui;
 
 use std::{fs::{File, self}, io::{Write, Read}, collections::HashMap, thread, time::Duration, env};
@@ -62,28 +62,24 @@ fn update_time(app_name : String) {
     let time_stamp = 3;
     let file_path = get_filepath();
     
-    let mut app_map = read_file();
-    
-    //let modif_data = String::from(app_name.as_str()) + ":" + time_stamp.to_string().as_str();
-    //let data_byte = modif_data.as_bytes();
-    
+    let mut app_map = read_file(&file_path);
+
     let mut file = File::options().write(true).open(file_path).unwrap();
-    
+
     if let Some(time) = app_map.get_mut(&app_name) {
         *time += time_stamp;
     }else {
         app_map.insert(app_name, 0);
     }
-    
+
     println!("{:?}",app_map);
-    
+
     for (name, time) in app_map.iter() {
         writeln!(file, "{}:{}",name,time).unwrap();
     }
 }
 
-fn read_file() -> HashMap<String,i32> {
-    let file_path = get_filepath();
+fn read_file(file_path: &String) -> HashMap<String,i32> {
     
     let file = File::open(&file_path);
     let mut map: HashMap<String, i32> = HashMap::new();
@@ -97,8 +93,8 @@ fn read_file() -> HashMap<String,i32> {
 
             for line in lines {
                 if let Some((name, time)) = line.split_once(":") {
-                    //println!("{}",time);
-                    map.insert(name.to_string(), time.parse::<i32>().unwrap());
+                    let c_time = time.trim();
+                    map.insert(name.to_string(), c_time.parse::<i32>().unwrap());
                 } 
             }
         }
