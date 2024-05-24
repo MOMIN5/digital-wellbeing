@@ -45,7 +45,7 @@ impl Default for WellbeingChart {
         let mut data_vec: Vec<(String,f32,Color32)> = vec![];
         let curr_date = chrono::Local::now().date_naive();
         let hashmap_data = read_file(&get_filepath());
-        //println!("{:?}",hashmap_data);
+
         for (name, time) in hashmap_data {
             let r = rand::thread_rng().gen_range(0..255);
             let g = rand::thread_rng().gen_range(0..255);
@@ -71,18 +71,16 @@ impl eframe::App for WellbeingChart {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| {
-                //ui.label(current_date);
                 ui.label(RichText::new("Digital Wellbeing Monitor").font(FontId::monospace(20.0)).color(Color32::WHITE));
 
                 let (response, painter) = ui.allocate_painter(Vec2::new(300.0,300.0), egui::Sense::hover());
-
                 let rect = response.rect;
                 let center = rect.center();
                 let radius = rect.width().min(rect.height()) / 3.0;
 
                 let total: f32 = self.data.iter().map(|(_, value, _)| *value).sum();
                 let mut start_angle = 0.0;
-                //println!("{:?}",self.data);
+
                 for (label, value, color) in &self.data {
                     let end_angle = start_angle + 2.0 * std::f32::consts::PI * value / total;
                     let points: Vec<Pos2> = (0..=100).map(|i| {
@@ -107,7 +105,6 @@ impl eframe::App for WellbeingChart {
             ui.horizontal_wrapped(|ui2| {
                 for (name,time,color) in &self.data {
 
-                    //let av_size = ui2.available_size();
                     let (mut resp, pain) = ui2.allocate_painter(Vec2::new(20.0, 20.0), egui::Sense::hover());
                     resp.rect.set_width(20.0);
                     let path2 = Shape::Rect(RectShape::new(resp.rect, Rounding::from(7.0), *color, Stroke::NONE));

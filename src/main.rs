@@ -1,4 +1,4 @@
-//#![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 mod gui;
 
 use std::{fs::{File, self}, io::{Write, Read}, collections::HashMap, thread, time::Duration, env};
