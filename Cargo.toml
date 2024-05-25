@@ -1,9 +1,10 @@
 [package]
-name = "proj"
+name = "DigitalWellbeing"
 version = "0.1.0"
 edition = "2021"
 windows_subsystem = "windows"
 authors = ["MOMIN5"]
+build = "src/build.rs"
 
 [dependencies]
 sysinfo = "0.30.12"
@@ -12,3 +13,7 @@ chrono = "0.4.38"
 egui = "0.27.2"
 eframe = "0.27.2"
 rand = "0.8.5"
+
+[build-dependencies]
+winresource = "0.1.17"
+

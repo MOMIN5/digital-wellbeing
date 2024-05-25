@@ -1,14 +1,28 @@
+use std::sync::Arc;
+
 use chrono::{NaiveDate, Datelike};
 use eframe::egui;
 use eframe::egui::{Color32, Pos2, Shape, Stroke, Vec2};
-use egui::{Rounding, RichText, FontId, Label, Window};
+use egui::{Rounding, RichText, FontId, Label, Window, IconData, ViewportBuilder};
 use egui::epaint::RectShape;
 use rand::Rng;
 
 use crate::{read_file, get_filepath};
 
 pub fn gui() -> Result<(), eframe::Error> {
-    let options = eframe::NativeOptions::default();
+
+    let icon = eframe::icon_data::from_png_bytes(include_bytes!("icon.png")).unwrap();
+
+    let options = eframe::NativeOptions{
+        viewport : ViewportBuilder::default().with_icon(Arc::new(IconData {
+            rgba: icon.rgba,
+            height: icon.height,
+            width: icon.width,
+        })),
+        ..Default::default()
+    };
+
+
     eframe::run_native(
         "Digital Wellbeing Monitor",
         options,
