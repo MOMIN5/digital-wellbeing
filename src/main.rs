@@ -12,9 +12,10 @@ fn main() {
     let arg: Vec<String> = env::args().collect();
     if arg.len() > 1 && arg[1] == "nogui" {
         loop{
-            let pid = get_foreground_process();
-            let name = get_process_name(pid);
+            let (pid,win_name) = get_foreground_process();
+            let mut name = get_process_name(pid);
 
+            if name == "ApplicationFrameHost" {name = win_name}
             update_time(name);
             thread::sleep(Duration::from_secs(3));
         }
@@ -23,14 +24,18 @@ fn main() {
     }
 }
 
-fn get_foreground_process() -> u32 {
+fn get_foreground_process() -> (u32,String) {
     unsafe {
         let current_window = winapi::um::winuser::GetForegroundWindow();
         
         let mut pid = 1;
         winapi::um::winuser::GetWindowThreadProcessId(current_window, &mut pid);
         
-        return pid;
+        let mut bytes = [0;255];
+        let read = winapi::um::winuser::GetWindowTextW(current_window, bytes.as_mut_ptr(), 255);
+
+        let str = String::from_utf16_lossy(&bytes);
+        return (pid,str);
     }
 }
 

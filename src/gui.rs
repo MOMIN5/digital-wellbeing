@@ -64,7 +64,7 @@ impl Default for WellbeingChart {
             let r = rand::thread_rng().gen_range(0..255);
             let g = rand::thread_rng().gen_range(0..255);
             let b = rand::thread_rng().gen_range(0..255);
-            if time > 0{
+            if time > 0 && name != ""{
                 data_vec.push((name,time as f32,Color32::from_rgb(r, g, b)));
             }
         }
@@ -158,7 +158,7 @@ impl eframe::App for WellbeingChart {
                             let r = rand::thread_rng().gen_range(0..255);
                             let g = rand::thread_rng().gen_range(0..255);
                             let b = rand::thread_rng().gen_range(0..255);
-                            if time > 0{
+                            if time > 0 && name != ""{
                                 prev_date_vec.push((name,time as f32,Color32::from_rgb(r, g, b)));
                             }
                         }
@@ -189,7 +189,7 @@ impl eframe::App for WellbeingChart {
                             let r = rand::thread_rng().gen_range(0..255);
                             let g = rand::thread_rng().gen_range(0..255);
                             let b = rand::thread_rng().gen_range(0..255);
-                            if time > 0{
+                            if time > 0 && name != ""{
                                 prev_date_vec.push((name,time as f32,Color32::from_rgb(r, g, b)));
                             }
                         }
