@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+//#![windows_subsystem = "windows"]
 mod gui;
 
 use std::{fs::{File, self}, io::{Write, Read}, collections::HashMap, thread, time::Duration, env};
@@ -30,11 +30,12 @@ fn get_foreground_process() -> (u32,String) {
         
         let mut pid = 1;
         winapi::um::winuser::GetWindowThreadProcessId(current_window, &mut pid);
+        let win_len = winapi::um::winuser::GetWindowTextLengthW(current_window);
         
-        let mut bytes = [0;255];
-        let read = winapi::um::winuser::GetWindowTextW(current_window, bytes.as_mut_ptr(), 255);
+        let mut bytes = [0; 150];
+        let read = winapi::um::winuser::GetWindowTextW(current_window, bytes.as_mut_ptr(), 150);
 
-        let str = String::from_utf16_lossy(&bytes);
+        let str = String::from_utf16_lossy(&bytes[0..win_len as usize]);
         return (pid,str);
     }
 }
@@ -70,11 +71,12 @@ fn update_time(app_name : String) {
     let mut app_map = read_file(&file_path);
 
     let mut file = File::options().write(true).open(file_path).unwrap();
+    let trimmed_name = app_name.trim().to_string();
 
-    if let Some(time) = app_map.get_mut(&app_name) {
+    if let Some(time) = app_map.get_mut(&trimmed_name) {
         *time += time_stamp;
     }else {
-        app_map.insert(app_name, 0);
+        app_map.insert(trimmed_name, 0);
     }
 
     println!("{:?}",app_map);

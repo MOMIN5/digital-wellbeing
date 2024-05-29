@@ -2,7 +2,7 @@
 name = "DigitalWellbeing"
 version = "0.1.0"
 edition = "2021"
-windows_subsystem = "windows"
+#windows_subsystem = "windows"
 authors = ["MOMIN5"]
 build = "src/build.rs"
 
