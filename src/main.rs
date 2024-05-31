@@ -1,4 +1,4 @@
-//#![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 mod gui;
 
 use std::{fs::{File, self}, io::{Write, Read}, collections::HashMap, thread, time::Duration, env};
@@ -15,7 +15,7 @@ fn main() {
             let (pid,win_name) = get_foreground_process();
             let mut name = get_process_name(pid);
 
-            if name == "ApplicationFrameHost" {name = win_name}
+            if name == "ApplicationFrameHost"{name = win_name}
             update_time(name);
             thread::sleep(Duration::from_secs(3));
         }
@@ -32,10 +32,12 @@ fn get_foreground_process() -> (u32,String) {
         winapi::um::winuser::GetWindowThreadProcessId(current_window, &mut pid);
         let win_len = winapi::um::winuser::GetWindowTextLengthW(current_window);
         
-        let mut bytes = [0; 150];
-        let read = winapi::um::winuser::GetWindowTextW(current_window, bytes.as_mut_ptr(), 150);
+        let mut bytes = [0; 500];
+        let read = winapi::um::winuser::GetWindowTextW(current_window, bytes.as_mut_ptr(), 500);
 
-        let str = String::from_utf16_lossy(&bytes[0..win_len as usize]);
+        let str = String::from_utf16_lossy(&bytes);
+        let str = str.trim_matches(char::from(0)).to_string();
+
         return (pid,str);
     }
 }
